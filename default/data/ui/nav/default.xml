@@ -1,0 +1,15 @@
+<nav search_view="search" color="#A9BCF5">
+  <view name="flashtimeline" default='true' />
+   <collection label="Suspicious Activities">
+    <view name="impossible_consecutive_logins"/>
+   </collection>   
+   <collection label="Access Analytics">
+    <view name="application_analytics"/>
+    <view name="login_analytics"/> 
+    <view name="authentication_insight"/>
+   </collection>   
+    <view label="Geo Map" name="geo_map"/>
+    <view label="Agent Activities" name="agent_activities"/>
+    <view name="alerts" />
+    <view name="dashboards" />
+</nav>

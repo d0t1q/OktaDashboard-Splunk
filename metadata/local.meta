@@ -1,0 +1,37 @@
+[app/ui]
+version = 7.2.4
+modtime = 1566844172.307748000
+
+[app/launcher]
+version = 7.2.4
+modtime = 1566844172.311323000
+
+[app/package/check_for_updates]
+version = 7.2.4
+modtime = 1566844172.312741000
+
+[]
+access = read : [ admin, qhradmin, security ], write : [ admin, qhradmin, security ]
+export = none
+version = 7.2.4
+modtime = 1567543700.355790000
+
+[views/brute_force]
+version = 7.2.4
+modtime = 1566848215.008939000
+
+[views/impossible_consecutive_logins]
+version = 7.2.4
+modtime = 1566848325.586114000
+
+[views/agent_activities]
+version = 7.2.4
+modtime = 1566854382.977682000
+
+[views/application_access_analytics]
+version = 7.2.4
+modtime = 1566851495.954967000
+
+[views/application_analytics]
+version = 7.2.4
+modtime = 1567624791.027758000

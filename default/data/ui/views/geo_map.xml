@@ -1,0 +1,115 @@
+<form>
+  <label>Geo Map</label>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="multiselect" token="login_status" searchWhenChanged="true">
+      <label>Authentication Status</label>
+      <search>
+        <query>eventtype=okta-events (legacyEventType="core.user_auth.login_success" OR legacyEventType="core.user_auth.login_failed" OR legacyEventType="core.user_auth.logout_success" OR legacyEventType="core.user_auth.account_locked" OR legacyEventType="core.user_auth.mfa_bypass_attempted" OR legacyEventType="core.user.sms.message_sent.verify" OR legacyEventType="core.user_auth.radius.login.failed" OR legacyEventType="core.user_auth.radius.logout.success") request.ipChain{}.ip!="" actor.displayName!=""  | rename legacyEventType as status  | stats count by status | sort -count</query>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+      </search>
+      <fieldForLabel>status</fieldForLabel>
+      <fieldForValue>status</fieldForValue>
+      <choice value="core.user_*">All</choice>
+      <prefix>(</prefix>
+      <valuePrefix>legacyEventType="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <suffix>)</suffix>
+      <default>core.user_*</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <map>
+        <title>Login by Message</title>
+        <search>
+          <query>eventtype=okta-events $login_status$ request.ipChain{}.ip!="" actor.displayName!="" | rename displayMessage as action_message | eval login_message=case(match(action_message,"SMS sent to verify user's phone number.*"), "SMS sent to verify user's phone number", !(match(action_message,"SMS sent to verify user's phone number.*")), action_message) | rename request.ipChain{}.ip as ipAddress legacyEventType as login_type| rename actor.displayName as login| where NOT isnull(ipAddress)|  iplocation allfields=true ipAddress    | geostats latfield=lat longfield=lon count by login_message</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="mapping.data.maxClusters">100</option>
+        <option name="mapping.drilldown">all</option>
+        <option name="mapping.map.center">(0,0)</option>
+        <option name="mapping.map.zoom">1</option>
+        <option name="mapping.markerLayer.markerMaxSize">50</option>
+        <option name="mapping.markerLayer.markerMinSize">10</option>
+        <option name="mapping.markerLayer.markerOpacity">0.8</option>
+        <option name="mapping.tileLayer.maxZoom">7</option>
+        <option name="mapping.tileLayer.minZoom">0</option>
+        <option name="drilldown">all</option>
+      </map>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Login Message by Country</title>
+        <search>
+          <query>eventtype=okta-events $login_status$  request.ipChain{}.ip!="" actor.displayName!="" | rename displayMessage as action_message | eval login_message=case(match(action_message,"SMS sent to verify user's phone number.*"), "SMS sent to verify user's phone number", !(match(action_message,"SMS sent to verify user's phone number.*")), action_message) | rename request.ipChain{}.ip as ipAddress legacyEventType as login_type| rename actor.displayName as login| where NOT isnull(ipAddress)|  iplocation allfields=true ipAddress    | where Country!="" | chart count over Country   by action_message  usenull=f</query>
+          <earliest>-30d@d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Authentication Status by Country</title>
+        <search>
+          <query>eventtype=okta-events $login_status$   request.ipChain{}.ip!="" actor.displayName!="" | rename request.ipChain{}.ip as ipAddress legacyEventType as login_type | rename actor.displayName as login | where NOT isnull(ipAddress) | iplocation allfields=true ipAddress    | where Country!="" | chart count over   Country by login_type usenull=f</query>
+          <earliest>-30d@d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+</form>

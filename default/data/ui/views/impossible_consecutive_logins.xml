@@ -1,0 +1,55 @@
+<form>
+  <label>Impossible Consecutive Logins</label>
+  <fieldset submitButton="false">
+    <input type="time" token="field2">
+      <label></label>
+      <default>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+        <input type="text" token="ratio">
+      <label>Distance/Time Ratio (miles/h)</label>
+      <default>500</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <map>
+        <title>Impossible Consecutive Logins Map</title>
+        <search>
+          <query>eventtype=okta-events (legacyEventType="core.user_auth.login_success" OR legacyEventType="core.user_auth.login_failed" OR legacyEventType="core.user_auth.logout_success" OR legacyEventType="core.user_auth.account_locked" OR legacyEventType="core.user_auth.mfa_bypass_attempted" OR legacyEventType="core.user.sms.message_sent.verify" OR legacyEventType="core.user_auth.radius.login.failed" OR legacyEventType="core.user_auth.radius.logout.success") request.ipChain{}.ip!="" actor.displayName!=""| rename request.ipChain{}.ip as ipAddress legacyEventType as login_type | rename actor.displayName as login| where NOT isnull(ipAddress)|  iplocation allfields=true ipAddress   | eval cur_t=_time   | streamstats current=t window=2 first(lat) as prev_lat  first(lon) as prev_lon first(cur_t) as prev_t first(ipAddress) as IP2 by login | rename ipAddress as IP1|  eval time_diff=cur_t - prev_t | distance outputField=distance inputFieldLat1=lat inputFieldLat2=prev_lat inputFieldLon1=lon inputFieldLon2=prev_lon |  eval time_diff=-1*time_diff| eval first_t=strftime(_time, "%Y-%m-%d %H:%M:%S") | eval prev_t=strftime(prev_t, "%Y-%m-%d %H:%M:%S") | eval ratio = distance*3600/time_diff | where ratio &gt;$ratio$  | geostats latfield=lat longfield=lon count by login_type</query>
+          <earliest>$field2.earliest$</earliest>
+          <latest>$field2.latest$</latest>
+        </search>
+        <option name="mapping.data.maxClusters">100</option>
+        <option name="mapping.drilldown">all</option>
+        <option name="mapping.map.center">(0,0)</option>
+        <option name="mapping.map.zoom">2</option>
+        <option name="mapping.markerLayer.markerMaxSize">50</option>
+        <option name="mapping.markerLayer.markerMinSize">10</option>
+        <option name="mapping.markerLayer.markerOpacity">0.8</option>
+        <option name="mapping.tileLayer.maxZoom">7</option>
+        <option name="mapping.tileLayer.minZoom">0</option>
+        <option name="drilldown">all</option>
+      </map>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Consecutive Logins Table</title>
+        <search>
+          <query>eventtype=okta-events (legacyEventType=core.user_auth.login_success OR legacyEventType=core.user_auth.login_failed) request.ipChain{}.ip!="" actor.displayName!=""| rename request.ipChain{}.ip as ipAddress | rename actor.displayName as login| where NOT isnull(ipAddress)|  iplocation allfields=true ipAddress   | eval cur_t=_time   | streamstats current=t window=2 first(lat) as prev_lat  first(lon) as prev_lon first(cur_t) as prev_t first(ipAddress) as IP2 first(City) as City2 first(Country) as Country2 by login | rename ipAddress as IP1 City as City1 Country as Country1|  eval time_diff=cur_t - prev_t | distance outputField=distance inputFieldLat1=lat inputFieldLat2=prev_lat inputFieldLon1=lon inputFieldLon2=prev_lon |  eval time_diff=-1*time_diff| eval first_t=strftime(_time, "%Y-%m-%d %H:%M:%S") | eval prev_t=strftime(prev_t, "%Y-%m-%d %H:%M:%S") | eval ratio = distance*3600/time_diff | where ratio &gt;$ratio$ | table login, distance, time_diff, first_t, IP1, City1, Country1, prev_t,  IP2, City2, Country2, ratio | rename prev_t as "Second Login Attempt" time_diff as "Time Difference (secs)" distance as "Distance (miles)" first_t as "First Login Attempt" | sort - ratio</query>
+          <earliest>$field2.earliest$</earliest>
+          <latest>$field2.latest$</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+</form>

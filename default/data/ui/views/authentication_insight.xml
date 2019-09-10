@@ -1,0 +1,210 @@
+<form stylesheet="single_decorations.css">
+  <label>Authentication Insight</label>
+  <fieldset submitButton="false">
+    <input type="time" token="field1" searchWhenChanged="true">
+      <label></label>
+      <default>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <single>
+        <title>Successful Logins</title>
+        <search>
+          <query>eventtype=okta-events legacyEventType="core.user_auth.login_success" | stats count(debugContext.debugData.requestId) as value | rangemap field=value low=0-50000 high=50001-100000 default=severe</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="classField">range</option>
+        <option name="field">value</option>
+        <option name="drilldown">all</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Failed Logins</title>
+        <search>
+          <query>eventtype=okta-events legacyEventType="core.user_auth.login_failed" | stats count(debugContext.debugData.requestId) as value | rangemap field=value low=0-100 high=101-1500 default=severe</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="classField">range</option>
+        <option name="field">value</option>
+        <option name="drilldown">all</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>MFA Logins</title>
+        <search>
+          <query>eventtype=okta-events (legacyEventType="core.user_auth.mfa_bypass_attempted" OR legacyEventType="core.user.sms.message_sent.verify") | stats count(debugContext.debugData.requestId) as value | rangemap field=value  low=0-100  high=101-1500 default=severe</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="classField">range</option>
+        <option name="field">value</option>
+        <option name="drilldown">all</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Locked Out Events</title>
+        <search>
+          <query>eventtype=okta-events legacyEventType="core.user_auth.account_locked" | stats count(debugContext.debugData.requestId) as value | rangemap field=value low=0-100 high=101-1500 default=severe</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="classField">range</option>
+        <option name="field">value</option>
+        <option name="drilldown">all</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Authentication Activity</title>
+        <search>
+          <query>eventtype=okta-events (legacyEventType="core.user_auth.login_success" OR legacyEventType="core.user_auth.login_failed" OR legacyEventType="core.user_auth.logout_success" OR legacyEventType="core.user_auth.account_locked" OR legacyEventType="core.user_auth.mfa_bypass_attempted" OR legacyEventType="core.user.sms.message_sent.verify" OR legacyEventType="core.user_auth.radius.login.failed" OR legacyEventType="core.user_auth.radius.logout.success")  | rename legacyEventType as object_type  | eval login_status=case(object_type=="core.user_auth.login_success", "Successful Core Login", object_type=="core.user_auth.login_failed", "Failed Core Login", object_type=="core.user_auth.logout_success", "Successful Core Logout", object_type=="core.user_auth.account_locked", "Account Locked", object_type=="core.user_auth.mfa_bypass_attempted", "MFA Bypass", object_type=="core.user.sms.message_sent.verify", "MFA",  object_type=="core.user_auth.radius.login.failed", "Radius Login Failed",  object_type=="core.user_auth.radius.login.success", "Radius Login Successful" )| rename actor.displayName as login |  timechart span=1h count(debugContext.debugData.requestId) as login_count  | predict login_count  upper90=high lower97=low as acceptable_range | rename login_count as "Authentication Activity Count"</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Failed Authentications</title>
+        <search>
+          <query>eventtype=okta-events (legacyEventType="core.user_auth.login_failed"  OR legacyEventType="core.user_auth.account_locked" OR legacyEventType="core.user_auth.radius.login.failed") | rename actor.displayName as login | timechart span=1h count(debugContext.debugData.requestId) as failed_login_count | predict failed_login_count  upper90=high lower97=low as acceptable_range | rename failed_login_count as "Failed Authentication Count"</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Most Active Users</title>
+      <table>
+        <search>
+          <query>eventtype=okta-events (legacyEventType="core.user_auth.login_success" OR legacyEventType="core.user_auth.login_failed" OR legacyEventType="core.user_auth.logout_success" OR legacyEventType="core.user_auth.account_locked" OR legacyEventType="core.user_auth.mfa_bypass_attempted" OR legacyEventType="core.user.sms.message_sent.verify" OR legacyEventType="core.user_auth.radius.login.failed" OR legacyEventType="core.user_auth.radius.logout.success") | rename legacyEventType as object_type | eval login_status=case(object_type=="core.user_auth.login_success", "Successful Okta Login", object_type=="core.user_auth.login_failed", "Failed Okta Login", object_type=="core.user_auth.logout_success", "Successful Okta Logout", object_type=="core.user_auth.account_locked", "Account Locked", object_type=="core.user_auth.mfa_bypass_attempted", "MFA Bypass", object_type=="core.user.sms.message_sent.verify", "MFA",  object_type=="core.user_auth.radius.login.failed", "Radius Login Failed", object_type=="core.user_auth.radius.login.success", "Radius Login Successful") | rename actor.displayName as login | chart count over login by login_status usenull=f | addtotals fieldname=Total | sort -Total</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Most Active IPs</title>
+      <table>
+        <search>
+          <query>eventtype=okta-events (legacyEventType="core.user_auth.login_success" OR legacyEventType="core.user_auth.login_failed" OR legacyEventType="core.user_auth.logout_success" OR legacyEventType="core.user_auth.account_locked" OR legacyEventType="core.user_auth.mfa_bypass_attempted" OR legacyEventType="core.user.sms.message_sent.verify" OR legacyEventType="core.user_auth.radius.login.failed" OR legacyEventType="core.user_auth.radius.logout.success") | rename legacyEventType as object_type | eval login_status=case(object_type=="core.user_auth.login_success", "Successful Okta Login", object_type=="core.user_auth.login_failed", "Failed Okta Login", object_type=="core.user_auth.logout_success", "Successful Okta Logout", object_type=="core.user_auth.account_locked", "Account Locked", object_type=="core.user_auth.mfa_bypass_attempted", "MFA Bypass", object_type=="core.user.sms.message_sent.verify", "MFA", object_type=="core.user_auth.radius.login.failed", "Radius Login Failed", object_type=="core.user_auth.radius.login.success", "Radius Login Successful") | rename request.ipChain{}.ip as IP | rename actor.displayName as login  | chart count over IP by login_status usenull=f  |  addtotals fieldname=Total | sort -Total</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>High Login Outliers</title>
+        <search>
+          <query>eventtype=okta-events (legacyEventType="core.user_auth.login_success" OR legacyEventType="core.user_auth.login_failed" OR legacyEventType="core.user_auth.logout_success" OR legacyEventType="core.user_auth.account_locked" OR legacyEventType="core.user_auth.mfa_bypass_attempted" OR legacyEventType="core.user.sms.message_sent.verify" OR legacyEventType="core.user_auth.radius.login.failed" OR legacyEventType="core.user_auth.radius.logout.success") | rename legacyEventType as object_type | eval login_status=case(object_type=="core.user_auth.login_success", "Successful Core Login", object_type=="core.user_auth.login_failed", "Failed Core Login", object_type=="core.user_auth.logout_success", "Successful Core Logout", object_type=="core.user_auth.account_locked", "Account Locked", object_type=="core.user_auth.mfa_bypass_attempted", "MFA Bypass", object_type=="core.user.sms.message_sent.verify", "MFA",  object_type=="core.user_auth.radius.login.failed", "Radius Login Failed",  object_type=="core.user_auth.radius.login.success", "Radius Login Successful") | rename actor.displayName as login | chart count sparkline(count, 6h) as trend by login  | sort -count | head 3</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <format type="sparkline" field="sparkline">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>High Login IPs Outliers</title>
+        <search>
+          <query>eventtype=okta-events (legacyEventType="core.user_auth.login_success" OR legacyEventType="core.user_auth.login_failed" OR legacyEventType="core.user_auth.logout_success" OR legacyEventType="core.user_auth.account_locked" OR legacyEventType="core.user_auth.mfa_bypass_attempted" OR legacyEventType="core.user.sms.message_sent.verify" OR legacyEventType="core.user_auth.radius.login.failed" OR legacyEventType="core.user_auth.radius.logout.success") | rename legacyEventType as object_type  | eval login_status=case(object_type=="core.user_auth.login_success", "Successful Core Login", object_type=="core.user_auth.login_failed", "Failed Core Login", object_type=="core.user_auth.logout_success", "Successful Core Logout", object_type=="core.user_auth.account_locked", "Account Locked", object_type=="core.user_auth.mfa_bypass_attempted", "MFA Bypass", object_type=="core.user.sms.message_sent.verify", "MFA",  object_type=="core.user_auth.radius.login.failed", "Radius Login Failed",  object_type=="core.user_auth.radius.login.success", "Radius Login Successful") | rename request.ipChain{}.ip as IP | rename actor.displayName as login  | chart count sparkline(count, 6h) as trend by IP  | sort -count | head 3</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">true</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <format type="sparkline" field="sparkline">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>
