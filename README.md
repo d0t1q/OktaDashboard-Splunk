@@ -2,7 +2,7 @@
 Updating the outdated Okta Dashboard to work with the new API
 
 Caveats:
-*	A lot of the implimentaitons I've setup still rely on the legacy API call
+*	A lot of the implimentaitons I've setup still rely on the legacy API
      `legacyEventType=`
 	Once Okta sunsets this Legacy result the dashboard will stop working. 
 * 	Version 1.0 and version 1.1 on Splunkbase does not include a bruteforce page 
