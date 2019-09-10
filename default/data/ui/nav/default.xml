@@ -10,6 +10,4 @@
    </collection>   
     <view label="Geo Map" name="geo_map"/>
     <view label="Agent Activities" name="agent_activities"/>
-    <view name="alerts" />
-    <view name="dashboards" />
 </nav>
