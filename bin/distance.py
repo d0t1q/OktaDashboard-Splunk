@@ -63,7 +63,7 @@ def main():
         
             splunk.Intersplunk.outputResults(results)
     
-    except Exception, e:
+    except Exception as e:
         import traceback
         stack =  traceback.format_exc()
         splunk.Intersplunk.generateErrorResults(str(e))
